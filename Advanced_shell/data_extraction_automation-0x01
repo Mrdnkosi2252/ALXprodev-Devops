@@ -6,15 +6,14 @@ if [ ! -s "data.json" ]; then
     exit 1
 fi
 
-# Use jq to extract name, height, weight, and type, then format with awk and sed
-jq -r '{name: .name, height: .height, weight: .weight, type: .types[0].type.name}' data.json | \
-awk '{
+# Use jq to extract name, height, weight, and type, then format with awk
+jq -r '[.name, .height, .weight, .types[0].type.name] | @tsv' data.json | \
+awk -F'\t' '{
     # Capitalize name and type
-    name = toupper(substr($1, 2, 1)) substr($1, 3, length($1)-3)
-    type = toupper(substr($4, 2, 1)) substr($4, 3, length($4)-3)
+    name = toupper(substr($1, 1, 1)) substr($1, 2)
+    type = toupper(substr($4, 1, 1)) substr($4, 2)
     # Format height (divide by 10, one decimal) and weight (divide by 10, no decimals)
     height = sprintf("%.1f", $2/10)
     weight = sprintf("%.0f", $3/10)
-    print name " is of type " type ", weighs " weight "kg, and is " height "m tall."
-}' | \
-sed 's/"//g'
+    printf "%s is of type %s, weighs %skg, and is %sm tall.\n", name, type, weight, height
+}'
