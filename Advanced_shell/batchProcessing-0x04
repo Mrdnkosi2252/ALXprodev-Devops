@@ -3,10 +3,10 @@
 POKEMONS=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
 OUTPUT_DIR="pokemon_data"
 ERROR_FILE="errors.txt"
-MAX_PARALLEL=3  # Limit concurrent processes
+MAX_PARALLEL=3  # Max concurrent fetches
 
 mkdir -p "$OUTPUT_DIR"
-: > "$ERROR_FILE"  # Clear error file
+: > "$ERROR_FILE"  # Reset error log
 
 fetch_pokemon() {
     local pokemon="$1"
@@ -14,25 +14,28 @@ fetch_pokemon() {
     echo "Fetching data for $pokemon..."
     curl -s -o "$output_file" "https://pokeapi.co/api/v2/pokemon/$pokemon" 2>> "$ERROR_FILE"
     if [ $? -eq 0 ] && [ -s "$output_file" ]; then
-        echo "Saved data to $output_file ✅"
+        echo "Saved data to $output_file "
     else
         echo "Failed to fetch data for $pokemon" >> "$ERROR_FILE"
     fi
 }
 
-# Track active jobs
-job_count=0
-
+# Main parallel loop using batching
+batch=()
 for POKEMON in "${POKEMONS[@]}"; do
-    fetch_pokemon "$POKEMON" &  # Run in background
-    ((job_count++))
-
-    # Throttle parallel jobs
-    if (( job_count >= MAX_PARALLEL )); then
-        wait -n  # Wait for any job to finish
-        ((job_count--))
+    fetch_pokemon "$POKEMON" &
+    batch+=($!)
+    if (( ${#batch[@]} >= MAX_PARALLEL )); then
+        for pid in "${batch[@]}"; do
+            wait "$pid"
+        done
+        batch=()  # Reset batch
     fi
 done
 
-wait  # Wait for all background jobs to finish
-echo "All Pokémon data fetched."
+# Final cleanup for any leftover processes
+for pid in "${batch[@]}"; do
+    wait "$pid"
+done
+
+echo " All Pokémon fetched and background jobs completed."
