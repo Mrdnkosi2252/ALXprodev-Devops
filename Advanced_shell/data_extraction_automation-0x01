@@ -9,6 +9,12 @@ fi
 # Use jq to extract name, height, weight, and type, then format with awk and sed
 jq -r '{name: .name, height: .height, weight: .weight, type: .types[0].type.name}' data.json | \
 awk '{
-    print $0
+    # Capitalize name and type
+    name = toupper(substr($1, 2, 1)) substr($1, 3, length($1)-3)
+    type = toupper(substr($4, 2, 1)) substr($4, 3, length($4)-3)
+    # Format height (divide by 10, one decimal) and weight (divide by 10, no decimals)
+    height = sprintf("%.1f", $2/10)
+    weight = sprintf("%.0f", $3/10)
+    print name " is of type " type ", weighs " weight "kg, and is " height "m tall."
 }' | \
-sed -n 's/.*"name":"\(.*\)","height":\([0-9]*\),"weight":\([0-9]*\),"type":"\(.*\)".*/\1 is of type \4, weighs \3kg, and is 0.\2m tall./p'
+sed 's/"//g'
