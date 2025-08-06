@@ -1,15 +1,13 @@
 #!/bin/bash
 
-# List of Pokémon to fetch
 POKEMONS=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
 OUTPUT_DIR="pokemon_data"
 ERROR_FILE="errors.txt"
-MAX_PARALLEL=3  # Limit concurrent processes to avoid overwhelming API
+MAX_PARALLEL=3  # Limit concurrent processes
 
-# Create output directory if it doesn't exist
 mkdir -p "$OUTPUT_DIR"
+: > "$ERROR_FILE"  # Clear error file
 
-# Function to fetch Pokémon data
 fetch_pokemon() {
     local pokemon="$1"
     local output_file="$OUTPUT_DIR/$pokemon.json"
@@ -22,3 +20,19 @@ fetch_pokemon() {
     fi
 }
 
+# Track active jobs
+job_count=0
+
+for POKEMON in "${POKEMONS[@]}"; do
+    fetch_pokemon "$POKEMON" &  # Run in background
+    ((job_count++))
+
+    # Throttle parallel jobs
+    if (( job_count >= MAX_PARALLEL )); then
+        wait -n  # Wait for any job to finish
+        ((job_count--))
+    fi
+done
+
+wait  # Wait for all background jobs to finish
+echo "All Pokémon data fetched."
