@@ -3,8 +3,9 @@
 INPUT_DIR="pokemon_data"
 OUTPUT_CSV="pokemon_report.csv"
 TEMP_FILE="temp_pokemon_data.txt"
+SORTED_FILE="sorted_pokemon_data.txt"
 
-# Check if input directory exists and has JSON files
+# Validate input directory and JSON files
 if [ ! -d "$INPUT_DIR" ] || [ -z "$(ls -A $INPUT_DIR/*.json 2>/dev/null)" ]; then
     echo "Error: No JSON files found in $INPUT_DIR"
     exit 1
@@ -13,7 +14,7 @@ fi
 # Create CSV header
 echo "Name,Height (m),Weight (kg)" > "$OUTPUT_CSV"
 
-# Extract data to temp file
+# Extract data
 > "$TEMP_FILE"
 for file in "$INPUT_DIR"/*.json; do
     if [ -s "$file" ]; then
@@ -21,10 +22,11 @@ for file in "$INPUT_DIR"/*.json; do
     fi
 done
 
-# Append extracted data to CSV
-cat "$TEMP_FILE" >> "$OUTPUT_CSV"
+# Sort by weight descending (-r for numeric reverse), then append to CSV
+sort -t, -k3 -nr "$TEMP_FILE" > "$SORTED_FILE"
+cat "$SORTED_FILE" >> "$OUTPUT_CSV"
 
-# Calculate averages using awk
+# Append average stats to the CSV
 awk -F, '
 NR > 1 {
     height += $2
@@ -37,4 +39,4 @@ END {
     } else {
         print "\nNo data to calculate averages."
     }
-}' "$OUTPUT_CSV" >> "$OUTPUT_CSV"
+}' "$SORTED_FILE" >> "$OUTPUT_CSV"
