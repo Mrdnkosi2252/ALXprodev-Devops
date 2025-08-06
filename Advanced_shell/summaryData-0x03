@@ -1,6 +1,5 @@
 #!/bin/bash
 
-# Define input and output files
 INPUT_DIR="pokemon_data"
 OUTPUT_CSV="pokemon_report.csv"
 TEMP_FILE="temp_pokemon_data.txt"
@@ -14,10 +13,28 @@ fi
 # Create CSV header
 echo "Name,Height (m),Weight (kg)" > "$OUTPUT_CSV"
 
-# Extract name, height, and weight from each JSON file using jq
+# Extract data to temp file
+> "$TEMP_FILE"
 for file in "$INPUT_DIR"/*.json; do
     if [ -s "$file" ]; then
         jq -r '[.name, (.height/10), (.weight/10)] | @csv' "$file" >> "$TEMP_FILE"
     fi
 done
 
+# Append extracted data to CSV
+cat "$TEMP_FILE" >> "$OUTPUT_CSV"
+
+# Calculate averages using awk
+awk -F, '
+NR > 1 {
+    height += $2
+    weight += $3
+    count++
+}
+END {
+    if (count > 0) {
+        printf "\nAverage Height: %.2f m\nAverage Weight: %.2f kg\n", height/count, weight/count
+    } else {
+        print "\nNo data to calculate averages."
+    }
+}' "$OUTPUT_CSV" >> "$OUTPUT_CSV"
