@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# Check if data.json exists and is not empty
+if [ ! -s "data.json" ]; then
+    echo "Error: data.json not found or empty"
+    exit 1
+fi
+
+# Use jq to extract name, height, weight, and type, then format with awk and sed
+jq -r '{name: .name, height: .height, weight: .weight, type: .types[0].type.name}' data.json | \
+awk '{
+    print $0
+}' | \
+sed -n 's/.*"name":"\(.*\)","height":\([0-9]*\),"weight":\([0-9]*\),"type":"\(.*\)".*/\1 is of type \4, weighs \3kg, and is 0.\2m tall./p'

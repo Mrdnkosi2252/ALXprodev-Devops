@@ -1,0 +1,23 @@
+#!/bin/bash
+
+# Define input and output files
+INPUT_DIR="pokemon_data"
+OUTPUT_CSV="pokemon_report.csv"
+TEMP_FILE="temp_pokemon_data.txt"
+
+# Check if input directory exists and has JSON files
+if [ ! -d "$INPUT_DIR" ] || [ -z "$(ls -A $INPUT_DIR/*.json 2>/dev/null)" ]; then
+    echo "Error: No JSON files found in $INPUT_DIR"
+    exit 1
+fi
+
+# Create CSV header
+echo "Name,Height (m),Weight (kg)" > "$OUTPUT_CSV"
+
+# Extract name, height, and weight from each JSON file using jq
+for file in "$INPUT_DIR"/*.json; do
+    if [ -s "$file" ]; then
+        jq -r '[.name, (.height/10), (.weight/10)] | @csv' "$file" >> "$TEMP_FILE"
+    fi
+done
+
