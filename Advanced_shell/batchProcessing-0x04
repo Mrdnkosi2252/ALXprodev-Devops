@@ -3,10 +3,10 @@
 POKEMONS=("bulbasaur" "ivysaur" "venusaur" "charmander" "charmeleon")
 OUTPUT_DIR="pokemon_data"
 ERROR_FILE="errors.txt"
-MAX_PARALLEL=3  # Max concurrent fetches
+MAX_PARALLEL=3
 
 mkdir -p "$OUTPUT_DIR"
-: > "$ERROR_FILE"  # Reset error log
+: > "$ERROR_FILE"
 
 fetch_pokemon() {
     local pokemon="$1"
@@ -20,22 +20,12 @@ fetch_pokemon() {
     fi
 }
 
-# Main parallel loop using batching
+# Parallel execution with process ID tracking
 batch=()
+
 for POKEMON in "${POKEMONS[@]}"; do
     fetch_pokemon "$POKEMON" &
     batch+=($!)
+    
     if (( ${#batch[@]} >= MAX_PARALLEL )); then
-        for pid in "${batch[@]}"; do
-            wait "$pid"
-        done
-        batch=()  # Reset batch
-    fi
-done
-
-# Final cleanup for any leftover processes
-for pid in "${batch[@]}"; do
-    wait "$pid"
-done
-
-echo " All Pokémon fetched and background jobs completed."
+        for pid in "${batch
